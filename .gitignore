@@ -1,0 +1,5 @@
+/dist
+/bundle-analyzer/bundle-diff-stage-failed.txt
+/bundle-analyzer/bundle-size-report.md
+/bundle-analyzer/master-bundle-stats.json
+/bundle-analyzer/current-bundle-stats.json

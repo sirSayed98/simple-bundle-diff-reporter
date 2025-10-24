@@ -1,0 +1,20 @@
+{
+  "name": "simple-bundle-analyzer",
+  "version": "1.0.1",
+  "description": "A simple bundle analyzer to compare bundle sizes between master and current branch",
+  "main": "src/index.js",
+  "keywords": [
+    "bundle",
+    "analyzer",
+    "bundle-analyzer",
+    "bundle-size",
+    "bundle-size-analyzer",
+    "bundle-size-comparison"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sirSayed98/simple-bundle-analyzer"
+  },
+  "author": "sirSayed98",
+  "license": "MIT"
+}
