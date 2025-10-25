@@ -1,6 +1,6 @@
-## simple-bundle-analyzer
+## simple-bundle-diff-reporter
 
-Simple, zero-dependency bundle size analyzer that compares your current build against a baseline (e.g., master/main) and generates a rich Markdown report. It flags files that changed significantly, were added/removed, and highlights bundles that are too large or too small to split.
+Simple, zero-dependency bundle size diff-reporter that compares your current build against a baseline (e.g., master/main) and generates a rich Markdown report. It flags files that changed significantly, were added/removed, and highlights bundles that are too large or too small to split.
 
 ### Why use this?
 - **Fast, simple, and framework-agnostic**: Works with any JS build output folder.
@@ -12,11 +12,11 @@ Simple, zero-dependency bundle size analyzer that compares your current build ag
 ## Installation
 
 ```bash
-npm i -D simple-bundle-analyzer
+npm i -D simple-bundle-diff-reporter
 # or
-yarn add -D simple-bundle-analyzer
+yarn add -D simple-bundle-diff-reporter
 # or
-pnpm add -D simple-bundle-analyzer
+pnpm add -D simple-bundle-diff-reporter
 ```
 
 
@@ -27,39 +27,39 @@ pnpm add -D simple-bundle-analyzer
 2) On your baseline branch (e.g., `main`), generate and store the baseline stats:
 
 ```js
-const BundleReporter = require('simple-bundle-analyzer');
+const BundleReporter = require('simple-bundle-diff-reporter');
 
 const reporter = new BundleReporter({
   buildFolder: 'dist',
-  outputFolder: 'bundle-analyzer',
+  outputFolder: 'bundle-diff-reporter',
   masterFile: 'master-bundle-stats.json',
   currentFile: 'current-bundle-stats.json'
 });
 
 reporter.generateBundleStats();
-// rename the output bundle-analyzer/current-bundle-stats.json to master-bundle-stats.json
+// rename the output bundle-diff-reporter/current-bundle-stats.json to master-bundle-stats.json
 ```
 
-Commit the generated `bundle-analyzer/master-bundle-stats.json` to your repo (or store as an artifact accessible in CI).
+Commit the generated `bundle-diff-reporter/master-bundle-stats.json` to your repo (or store as an artifact accessible in CI).
 
 3) On your feature/PR branch, after building, generate the current stats and the comparison report:
 
 ```js
 
-const BundleReporter = require('simple-bundle-analyzer');
+const BundleReporter = require('simple-bundle-diff-reporter');
 
 const reporter = new BundleReporter({
   buildFolder: 'dist',
-  outputFolder: 'bundle-analyzer',
+  outputFolder: 'bundle-diff-reporter',
   masterFile: 'master-bundle-stats.json',
   currentFile: 'current-bundle-stats.json'
 });
 
 
-// Writes bundle-analyzer/current-bundle-stats.json
+// Writes bundle-diff-reporter/current-bundle-stats.json
 reporter.generateBundleStats();
 
-// Writes bundle-analyzer/bundle-size-report.md 
+// Writes bundle-diff-reporter/bundle-size-report.md 
 reporter.generateReport();
 
 ```
@@ -70,7 +70,7 @@ reporter.generateReport();
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | buildFolder | string | "dist" | Folder containing your built JS files. |
-| outputFolder | string | "bundle-analyzer" | Where to write all outputs. |
+| outputFolder | string | "bundle-diff-reporter" | Where to write all outputs. |
 | changeThreshold | number | 5 | Minimum % size change to count a file as "changed" in the report. |
 | splittingUpperLimit | number (KB) | 250 | Files larger than this are flagged as above average. |
 | splittingLowerLimit | number (KB) | 20 | Split chunks smaller than this are flagged as below average. |
@@ -88,7 +88,7 @@ Notes:
 
 ## Outputs
 
-All outputs go to `outputFolder` (default `bundle-analyzer/`):
+All outputs go to `outputFolder` (default `bundle-diff-reporter/`):
 
 - `master-bundle-stats.json` — Baseline bundle map `{ [fileName]: { size: number(KB) } }`.
 - `current-bundle-stats.json` — Current bundle map, same shape, sorted by size.
@@ -116,7 +116,7 @@ Below is an example of the generated report. It contains:
 
 ## Suggested CI usage (example)
 
-Run after your build step. If the analyzer writes the failure flag file, fail the job:
+Run after your build step. If the diff-reporter writes the failure flag file, fail the job:
 
 ```bash
  stage('generate-bundle-reports') {       
@@ -132,22 +132,22 @@ Run after your build step. If the analyzer writes the failure flag file, fail th
                 s3Download(
                   bucket: 's3-bucket-name',
                   path: "s3-bucket-name/master-bundle-stats.json",
-                  file: 'bundle-analyzer/master-bundle-stats.json',
+                  file: 'bundle-diff-reporter/master-bundle-stats.json',
                 )
               }
             // Verify download
-            if (!fileExists('bundle-analyzer/master-bundle-stats.json')) {
+            if (!fileExists('bundle-diff-reporter/master-bundle-stats.json')) {
               error("Master bundle stats file missing after download")
             }
             else {
                 sh '''#!/usr/bin/env bash
                   set -x
                   export NODE_OPTIONS="--max-old-space-size=4096"
-                  node bundle-analyzer/index.js
+                  node bundle-diff-reporter/index.js
                 '''
-                def report = readFile file: 'bundle-analyzer/bundle-size-report.md'
-                pullRequest.comment("${report}") // to comment the output of bundle-analyzer as PR comment
-                if (fileExists('bundle-analyzer/bundle-diff-stage-failed.txt')) {
+                def report = readFile file: 'bundle-diff-reporter/bundle-size-report.md'
+                pullRequest.comment("${report}") // to comment the output of bundle-diff-reporter as PR comment
+                if (fileExists('bundle-diff-reporter/bundle-diff-stage-failed.txt')) {
                   error("🔴 Failed to pass bundle size check")
                 }
               }
@@ -158,7 +158,7 @@ Run after your build step. If the analyzer writes the failure flag file, fail th
 ## FAQs
 
 - **Do I need to commit the baseline file?**
-  You can commit `bundle-analyzer/master-bundle-stats.json` or fetch/store it via CI artifacts. The analyzer needs access to it when running comparisons.
+  You can commit `bundle-diff-reporter/master-bundle-stats.json` or fetch/store it via CI artifacts. The diff-reporter needs access to it when running comparisons.
 
 - **What files are analyzed?**
    `.js` files in `buildFolder`. Filenames are normalized by removing common hash/chunk patterns.

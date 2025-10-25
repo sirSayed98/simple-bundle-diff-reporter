@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-class BundleReporter {
+class BundleDiffReporter {
   constructor(options = {}) {
     this.config = {
       buildFolder: options.buildFolder || 'dist',
@@ -441,4 +441,4 @@ class BundleReporter {
 }
 
 // Export the class
-module.exports = BundleReporter;
+module.exports = BundleDiffReporter;
