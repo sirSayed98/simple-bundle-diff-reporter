@@ -1,7 +1,41 @@
 const fs = require('fs');
 const path = require('path');
 
+/**
+ * A utility class for analyzing and comparing JavaScript bundle sizes between branches.
+ * Generates detailed reports about bundle size changes, identifies files that exceed size thresholds,
+ * and provides markdown-formatted output for easy integration with CI/CD pipelines.
+ * 
+ * @class BundleDiffReporter
+ * @example
+ * const reporter = new BundleDiffReporter({
+ *   buildFolder: 'dist',
+ *   changeThreshold: 5,
+ *   splittingUpperLimit: 250,
+ *   splittingLowerLimit: 20
+ * });
+ * reporter.generateBundleStats();
+ * const result = reporter.generateReport();
+ */
 class BundleDiffReporter {
+
+ 
+  /**
+   * Creates an instance of BundleDiffReporter.
+   * 
+   * @param {Object} [options={}] - Configuration options for the reporter
+   * @param {string} [options.buildFolder='dist'] - Path to the build folder containing bundle files
+   * @param {string} [options.outputFolder='bundle-analyzer'] - Path to output folder for reports
+   * @param {number} [options.changeThreshold=5] - Minimum percentage change to report (default: 5%)
+   * @param {number} [options.splittingUpperLimit=250] - Maximum recommended file size in KB
+   * @param {number} [options.splittingLowerLimit=20] - Minimum recommended file size in KB
+   * @param {string} [options.masterFile='master-bundle-stats.json'] - Filename for master branch stats
+   * @param {string} [options.currentFile='current-bundle-stats.json'] - Filename for current branch stats
+   * @param {string} [options.outputFile='bundle-size-report.md'] - Filename for markdown report
+   * @param {string} [options.failureFile='bundle-diff-stage-failed.txt'] - Filename for failure flag
+   * @param {string[]} [options.aboveAverageFiles=[]] - Files exempt from upper limit check
+   * @param {string[]} [options.belowAverageFiles=[]] - Files exempt from lower limit check
+   */
   constructor(options = {}) {
     this.config = {
       buildFolder: options.buildFolder || 'dist',
@@ -30,6 +64,14 @@ class BundleDiffReporter {
     }
   }
 
+  /**
+   * Generates bundle statistics by analyzing JavaScript files in the build folder.
+   * Reads all .js files, removes hash patterns from filenames, calculates sizes,
+   * and writes sorted results to a JSON file.
+   * 
+   * @throws {Error} If build folder cannot be read or output file cannot be written
+   * @returns {void}
+   */
   generateBundleStats() {
     const distFolder = path.join(process.cwd(), this.config.buildFolder);
     const result = {};
@@ -82,7 +124,15 @@ class BundleDiffReporter {
   }
 
   /**
-   * Main entry point - generates complete bundle report
+   * Main entry point - generates complete bundle report.
+   * Compares bundle sizes, checks file sizes against thresholds,
+   * writes failure flags if needed, and generates markdown report.
+   * 
+   * @returns {{success: boolean, diff: Object, failedFiles: Object}} Report results
+   * @returns {boolean} return.success - Whether all checks passed
+   * @returns {Object} return.diff - Detailed diff information
+   * @returns {Object} return.failedFiles - Files that failed size checks
+   * @throws {Error} Exits process if any critical error occurs
    */
   generateReport() {
     try {
@@ -103,8 +153,22 @@ class BundleDiffReporter {
   }
 
   /**
-   * Compares bundle sizes between master and current branch
-   * @returns {Object} Diff object containing added, removed, changed files and summary
+   * Compares bundle sizes between master and current branch.
+   * Reads both master and current bundle stats files, calculates differences,
+   * and categorizes files as added, removed, changed, or unchanged.
+   * 
+   * @returns {Object} Diff object with detailed comparison
+   * @returns {Object} return.added - Files added in current branch
+   * @returns {Object} return.removed - Files removed in current branch
+   * @returns {Object} return.changed - Files with significant size changes
+   * @returns {Object} return.same - Files with insignificant changes
+   * @returns {Object} return.summary - Aggregate statistics
+   * @returns {number} return.summary.totalAdded - Total size of added files (KB)
+   * @returns {number} return.summary.totalRemoved - Total size of removed files (KB)
+   * @returns {number} return.summary.sizeIncrease - Total size increase (KB)
+   * @returns {number} return.summary.sizeDecrease - Total size decrease (KB)
+   * @returns {number} return.summary.countChanged - Number of changed files
+   * @throws {Error} Exits process if stats files are missing or unreadable
    */
   compareBundleSizes() {
     const masterPath = path.join(process.cwd(), this.config.outputFolder, this.config.masterFile);
