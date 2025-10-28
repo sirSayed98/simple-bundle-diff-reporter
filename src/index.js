@@ -176,6 +176,7 @@ class BundleDiffReporter {
     md += this.generateAddedFilesSection();
     md += this.generateRemovedFilesSection();
     md += '\n</details>\n\n';
+    md += this.generateNotesSection();
 
     try {
       fs.writeFileSync(path.join(process.cwd(), this.config.outputFolder, this.config.outputFile), md);
@@ -384,10 +385,6 @@ class BundleDiffReporter {
       md += this.formatChangedFileRow(file, data);
     });
 
-    md += '> [!NOTE]\n';
-    md += `> We use a threshold of ±${this.config.changeThreshold}% to determine if a change is significant.\n`;
-    md += '\n> [!IMPORTANT]\n';
-    md += `> Keep each chunk under ${this.config.splittingUpperLimit}KB raw size to maintain optimal load.\n`;
     md += '\n</details>\n\n';
 
     return md;
@@ -455,9 +452,6 @@ class BundleDiffReporter {
     });
 
     md += '\n\n</details>\n\n';
-    md += '> [!IMPORTANT]\n';
-    md += `> Split chunks should be larger than ${this.config.splittingLowerLimit}KB; otherwise, it's recommended not to split them to avoid unnecessary overhead.\n`;
-    md += '\n';
 
     return md;
   }
@@ -476,6 +470,24 @@ class BundleDiffReporter {
     });
 
     md += '\n</details>\n\n';
+    return md;
+  }
+  generateNotesSection() {
+    let md = '';
+    if (Object.keys(this.diff.changed).length !== 0) {
+      md += '> [!NOTE]\n';
+      md += `> We use a threshold of ±${this.config.changeThreshold}% to determine if a change is significant.\n\n`;
+     
+      md += '\n> [!IMPORTANT]\n';
+      md += `> Keep each chunk under ${this.config.splittingUpperLimit}KB raw size to maintain optimal load.\n\n`;
+      
+    }
+
+    if (Object.keys(this.diff.added).length !== 0) {
+      md += '> [!IMPORTANT]\n';
+      md += `> Split chunks should be larger than ${this.config.splittingLowerLimit}KB; otherwise, it's recommended not to split them to avoid unnecessary overhead.\n`;
+    }
+   
     return md;
   }
 }
