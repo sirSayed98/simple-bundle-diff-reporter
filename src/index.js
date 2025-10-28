@@ -20,8 +20,13 @@ class BundleDiffReporter {
     this.diff = null;
     this.failedFiles = null;
     // create output folder if it doesn't exist
-    if (!fs.existsSync(path.join(process.cwd(), this.config.outputFolder))) {
-      fs.mkdirSync(path.join(process.cwd(), this.config.outputFolder));
+    try {
+      if (!fs.existsSync(path.join(process.cwd(), this.config.outputFolder))) {
+        fs.mkdirSync(path.join(process.cwd(), this.config.outputFolder));
+      }
+    } catch (error) {
+      console.error('Error creating output folder:', error.message);
+      throw error;
     }
   }
 
@@ -29,24 +34,29 @@ class BundleDiffReporter {
     const distFolder = path.join(process.cwd(), this.config.buildFolder);
     const result = {};
 
-    // Get all top-level JS files
-    fs.readdirSync(distFolder)
-      .filter(file => {
-        const fullPath = path.join(distFolder, file);
-        return fs.statSync(fullPath).isFile() && path.extname(file) === '.js';
-      })
-      .forEach(file => {
-        // Clean filename by removing hash
-        const cleanName = file
-          .replace(/\.[0-9a-f]{8,}\.js$/i, '.js') // Remove standard content hash
-          .replace(/-[0-9a-f]{10,}\.js$/i, '.js') // Remove chunk hashes
-          .replace(/\.chunk\.js$/i, '.js'); // Remove chunk identifiers
+    try {
+      // Get all top-level JS files
+      fs.readdirSync(distFolder)
+        .filter(file => {
+          const fullPath = path.join(distFolder, file);
+          return fs.statSync(fullPath).isFile() && path.extname(file) === '.js';
+        })
+        .forEach(file => {
+          // Clean filename by removing hash
+          const cleanName = file
+            .replace(/\.[0-9a-f]{8,}\.js$/i, '.js') // Remove standard content hash
+            .replace(/-[0-9a-f]{10,}\.js$/i, '.js') // Remove chunk hashes
+            .replace(/\.chunk\.js$/i, '.js'); // Remove chunk identifiers
 
-        // Get file size in KB with 2 decimal places
-        const sizeKB = parseFloat((fs.statSync(path.join(distFolder, file)).size / 1024).toFixed(2));
+          // Get file size in KB with 2 decimal places
+          const sizeKB = parseFloat((fs.statSync(path.join(distFolder, file)).size / 1024).toFixed(2));
 
-        result[cleanName] = { size: sizeKB };
-      });
+          result[cleanName] = { size: sizeKB };
+        });
+    } catch (error) {
+      console.error('Error reading build folder:', error.message);
+      throw error;
+    }
 
     // Sort entries by size descending
     const sortedEntries = Object.entries(result).sort(([, a], [, b]) => b.size - a.size);
@@ -63,7 +73,12 @@ class BundleDiffReporter {
 
     // Write to JSON file
     const outputPath = path.join(process.cwd(), this.config.outputFolder, this.config.currentFile);
-    fs.writeFileSync(outputPath, JSON.stringify(sortedResult, null, 2));
+    try {
+      fs.writeFileSync(outputPath, JSON.stringify(sortedResult, null, 2));
+    } catch (error) {
+      console.error('Error writing bundle stats file:', error.message);
+      throw error;
+    }
   }
 
   /**
@@ -94,6 +109,16 @@ class BundleDiffReporter {
   compareBundleSizes() {
     const masterPath = path.join(process.cwd(), this.config.outputFolder, this.config.masterFile);
     const currentPath = path.join(process.cwd(), this.config.outputFolder, this.config.currentFile);
+
+    // Check if master and current stats files exist
+    if (!fs.existsSync(masterPath)) {
+      console.error(`Error: ${this.config.masterFile} bundle stats file not found at: ${masterPath}`);
+      process.exit(1);
+    }
+    if (!fs.existsSync(currentPath)) {
+      console.error(`Error: ${this.config.currentFile} bundle stats file not found at: ${currentPath}`);
+      process.exit(1);
+    }
 
     try {
       const master = this.readJsonFile(masterPath);
@@ -152,13 +177,23 @@ class BundleDiffReporter {
     md += this.generateRemovedFilesSection();
     md += '\n</details>\n\n';
 
-    fs.writeFileSync(path.join(process.cwd(), this.config.outputFolder, this.config.outputFile), md);
+    try {
+      fs.writeFileSync(path.join(process.cwd(), this.config.outputFolder, this.config.outputFile), md);
+    } catch (error) {
+      console.error('Error writing markdown report file:', error.message);
+      throw error;
+    }
   }
 
   // ============= Private Helper Methods =============
 
   readJsonFile(filePath) {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    try {
+      return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    } catch (error) {
+      console.error(`Error reading JSON file (${filePath}):`, error.message);
+      throw error;
+    }
   }
 
   initializeDiff() {
@@ -289,10 +324,15 @@ class BundleDiffReporter {
 
   writeFailureFlag() {
     if (!this.isSuccess()) {
-      fs.writeFileSync(
-        path.join(process.cwd(), this.config.outputFolder, this.config.failureFile),
-        '🔴 Failed to pass bundle size check'
-      );
+      try {
+        fs.writeFileSync(
+          path.join(process.cwd(), this.config.outputFolder, this.config.failureFile),
+          '🔴 Failed to pass bundle size check'
+        );
+      } catch (error) {
+        console.error('Error writing failure flag file:', error.message);
+        throw error;
+      }
     }
   }
 
