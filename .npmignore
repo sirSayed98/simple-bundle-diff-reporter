@@ -1,0 +1,11 @@
+# Ignore images folder
+images/
+
+# Ignore example file
+example.js
+
+# Ignore development files
+node_modules/
+.git/
+.gitignore
+
